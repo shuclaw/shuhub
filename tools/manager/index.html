@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShuHub Manager</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; }
+        .header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 15px 20px; }
+        .header h1 { font-size: 20px; }
+        .main { display: flex; height: calc(100vh - 60px); }
+        .sidebar { width: 200px; background: white; border-right: 1px solid #e0e0e0; padding: 15px; }
+        .nav-item { padding: 12px; border-radius: 8px; cursor: pointer; margin-bottom: 5px; }
+        .nav-item:hover { background: #f5f5f5; }
+        .nav-item.active { background: #667eea; color: white; }
+        .content { flex: 1; padding: 20px; overflow-y: auto; }
+        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; }
+        .status-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+        .status-item { background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; }
+        .status-value { font-size: 28px; font-weight: bold; color: #667eea; }
+        .status-label { font-size: 12px; color: #666; margin-top: 5px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: 500; margin-bottom: 5px; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-success { background: #52c41a; color: white; }
+        .api-list { display: grid; gap: 15px; }
+        .api-item { background: #f8f9fa; padding: 15px; border-radius: 8px; }
+        .api-name { font-weight: 600; margin-bottom: 10px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ShuHub Manager</h1>
+    </div>
+    
+    <div class="main">
+        <div class="sidebar">
+            <div class="nav-item active" onclick="showPage('dashboard', this)">📊 仪表盘</div>
+            <div class="nav-item" onclick="showPage('config', this)">⚙️ API配置</div>
+            <div class="nav-item" onclick="showPage('chat', this)">💬 测试聊天</div>
+            <div class="nav-item" onclick="showPage('about', this)">ℹ️ 关于</div>
+        </div>
+        
+        <div class="content">
+            <!-- 仪表盘 -->
+            <div id="page-dashboard">
+                <div class="card">
+                    <div class="card-title">系统状态</div>
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <div class="status-value" id="stat-total">-</div>
+                            <div class="status-label">总请求</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-value" id="stat-cached">-</div>
+                            <div class="status-label">缓存率</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-value" id="stat-cost">-</div>
+                            <div class="status-label">成本</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-value" id="stat-apis">-</div>
+                            <div class="status-label">API数</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:15px;">
+                        <button class="btn btn-primary" onclick="refreshStatus()">刷新状态</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-title">健康检查</div>
+                    <div id="health-info">点击刷新查看</div>
+                </div>
+            </div>
+            
+            <!-- API配置 -->
+            <div id="page-config" class="hidden">
+                <div class="card">
+                    <div class="card-title">服务配置</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>服务地址</label>
+                            <input type="text" id="cfg-host" value="localhost">
+                        </div>
+                        <div class="form-group">
+                            <label>端口</label>
+                            <input type="number" id="cfg-port" value="3001">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="saveConfig()">保存</button>
+                </div>
+                
+                <div class="card">
+                    <div class="card-title">API密钥配置</div>
+                    <p style="color:#666;margin-bottom:15px;">本地保存，不会外传</p>
+                    
+                    <div class="api-list">
+                        <div class="api-item">
+                            <div class="api-name">☁️ 阿里云</div>
+                            <div class="form-group">
+                                <label>API Key</label>
+                                <input type="password" id="key-aliyun" placeholder="sk-sp-xxx">
+                            </div>
+                            <button class="btn btn-success" onclick="testApi('aliyun')">测试</button>
+                        </div>
+                        
+                        <div class="api-item">
+                            <div class="api-name">🤖 MiniMax</div>
+                            <div class="form-group">
+                                <label>API Key</label>
+                                <input type="password" id="key-minimax" placeholder="输入Key">
+                            </div>
+                            <button class="btn btn-success" onclick="testApi('minimax')">测试</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 测试聊天 -->
+            <div id="page-chat" class="hidden">
+                <div class="card">
+                    <div class="card-title">测试聊天</div>
+                    <div id="chat-messages" style="background:#f8f9fa;padding:15px;border-radius:8px;height:250px;overflow-y:auto;margin-bottom:15px;">
+                        <p>你好！输入消息开始测试。</p>
+                    </div>
+                    <div style="display:flex;gap:10px;">
+                        <input type="text" id="chat-input" placeholder="输入消息..." style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;">
+                        <button class="btn btn-primary" onclick="sendChat()">发送</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 关于 -->
+            <div id="page-about" class="hidden">
+                <div class="card">
+                    <div class="card-title">关于</div>
+                    <p><strong>ShuHub Manager</strong></p>
+                    <p style="margin-top:10px;">普通人也能打造自己的Agent团队</p>
+                    <p style="margin-top:10px;">版本: 1.0.0</p>
+                    <p style="margin-top:10px;"><a href="https://github.com/shuclaw/shuhub" target="_blank">GitHub仓库</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let cfg = {};
+        
+        function showPage(page, el) {
+            document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+            document.getElementById('page-' + page).classList.remove('hidden');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            if (el) el.classList.add('active');
+        }
+        
+        async function loadCfg() {
+            cfg = await window.electronAPI.getConfig();
+            document.getElementById('cfg-host').value = cfg.server?.host || 'localhost';
+            document.getElementById('cfg-port').value = cfg.server?.port || 3001;
+            if (cfg.apis?.aliyun?.key) document.getElementById('key-aliyun').value = cfg.apis.aliyun.key;
+            if (cfg.apis?.minimax?.key) document.getElementById('key-minimax').value = cfg.apis.minimax.key;
+        }
+        
+        async function saveConfig() {
+            await window.electronAPI.saveConfig({
+                server: {
+                    host: document.getElementById('cfg-host').value,
+                    port: parseInt(document.getElementById('cfg-port').value)
+                }
+            });
+            alert('已保存');
+        }
+        
+        async function testApi(name) {
+            const key = document.getElementById('key-' + name).value;
+            if (!key) { alert('请输入Key'); return; }
+            
+            const api = cfg.apis?.[name];
+            if (!api) { alert('API配置不存在'); return; }
+            
+            try {
+                const result = await window.electronAPI.testApi({ ...api, key });
+                if (result.success) {
+                    alert('连接成功！');
+                    await window.electronAPI.saveConfig({ apis: { [name]: { ...api, key } } });
+                } else {
+                    alert('失败: ' + result.error);
+                }
+            } catch (e) {
+                alert('错误: ' + e.message);
+            }
+        }
+        
+        async function refreshStatus() {
+            try {
+                const r = await window.electronAPI.getStatus();
+                if (r.success) {
+                    document.getElementById('stat-total').textContent = r.data.stats?.total || 0;
+                    document.getElementById('stat-cached').textContent = r.data.stats?.cacheRate || '0%';
+                    document.getElementById('stat-cost').textContent = '¥' + (r.data.stats?.cost || 0).toFixed(4);
+                    document.getElementById('stat-apis').textContent = r.data.apis?.length || 0;
+                    document.getElementById('health-info').innerHTML = '<p style="color:#52c41a">服务正常</p>';
+                } else {
+                    throw new Error(r.error);
+                }
+            } catch (e) {
+                document.getElementById('health-info').innerHTML = '<p style="color:#f5222d">连接失败: ' + e.message + '</p>';
+            }
+        }
+        
+        async function sendChat() {
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+            
+            const box = document.getElementById('chat-messages');
+            box.innerHTML += '<p style="margin-bottom:10px;"><strong>你:</strong> ' + msg + '</p>';
+            input.value = '';
+            
+            try {
+                const r = await window.electronAPI.chat({ model: 'qwen-plus', message: msg });
+                if (r.success) {
+                    const content = r.data.choices?.[0]?.message?.content || '无响应';
+                    box.innerHTML += '<p style="background:#fff;padding:10px;border-radius:8px;margin-bottom:10px;"><strong>AI:</strong> ' + content + '</p>';
+                } else {
+                    box.innerHTML += '<p style="color:#f5222d">错误: ' + r.error + '</p>';
+                }
+            } catch (e) {
+                box.innerHTML += '<p style="color:#f5222d">错误: ' + e.message + '</p>';
+            }
+            
+            box.scrollTop = box.scrollHeight;
+        }
+        
+        document.getElementById('chat-input').onkeypress = function(e) {
+            if (e.key === 'Enter') sendChat();
+        };
+        
+        loadCfg();
+    </script>
+</body>
+</html>
