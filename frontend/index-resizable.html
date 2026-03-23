@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShuHub - 可拖拽模块化面板</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      height: 100vh; 
+      overflow: hidden; 
+    }
+    
+    .app { 
+      display: flex; 
+      flex-direction: column; 
+      height: 100vh; 
+    }
+    
+    .header { 
+      height: 50px; 
+      background: rgba(255,255,255,0.95); 
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,0.2); 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      padding: 0 20px; 
+      z-index: 100;
+    }
+    .logo { 
+      font-size: 20px; 
+      font-weight: 700; 
+      background: linear-gradient(135deg, #6366f1, #8b5cf6); 
+      -webkit-background-clip: text; 
+      -webkit-text-fill-color: transparent; 
+    }
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+    .header-btn {
+      padding: 8px 16px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .header-btn:hover {
+      background: #f8fafc;
+      border-color: #6366f1;
+      color: #6366f1;
+    }
+    
+    .workspace {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .workspace-hint {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: rgba(255,255,255,0.5);
+      pointer-events: none;
+    }
+    .workspace-hint h2 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    .workspace-hint p {
+      font-size: 14px;
+    }
+    
+    .snap-zones {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .snap-zones.active {
+      opacity: 1;
+    }
+    .snap-zone {
+      position: absolute;
+      border: 2px dashed rgba(99,102,241,0.5);
+      background: rgba(99,102,241,0.1);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #6366f1;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .snap-left { left: 10px; top: 10px; bottom: 10px; width: 300px; }
+    .snap-right { right: 10px; top: 10px; bottom: 10px; width: 400px; }
+    .snap-top { left: 320px; right: 420px; top: 10px; height: 200px; }
+    .snap-bottom { left: 320px; right: 420px; bottom: 10px; height: 250px; }
+    .snap-center { left: 320px; right: 420px; top: 220px; bottom: 270px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">🔧 ShuHub 可拖拽面板</div>
+      <div class="header-actions">
+        <button class="header-btn" onclick="resetLayout()">🔄 重置布局</button>
+        <button class="header-btn" onclick="toggleSnapZones()">🧲 显示磁吸区</button>
+        <button class="header-btn" onclick="addTestLog()">📝 添加日志</button>
+      </div>
+    </header>
+
+    <!-- 工作区 -->
+    <div class="workspace" id="workspace">
+      <div class="workspace-hint">
+        <h2>拖拽面板到任意位置</h2>
+        <p>支持磁吸到边缘 | 可调整大小 | 最大最小尺寸限制</p>
+      </div>
+      
+      <!-- 磁吸区域提示 -->
+      <div class="snap-zones" id="snapZones">
+        <div class="snap-zone snap-left">左侧</div>
+        <div class="snap-zone snap-right">右侧</div>
+        <div class="snap-zone snap-top">上中</div>
+        <div class="snap-zone snap-bottom">下中</div>
+        <div class="snap-zone snap-center">中间</div>
+      </div>
+      
+      <!-- 面板容器 -->
+      <div id="taskPanelContainer"></div>
+      <div id="pendingPanelContainer"></div>
+      <div id="logPanelContainer"></div>
+    </div>
+  </div>
+
+  <!-- 加载组件 -->
+  <script src="components/base.js"></script>
+  <script src="components/resizable-panel.js"></script>
+  <script src="components/task-panel-resizable.js"></script>
+  <script src="components/interaction-log-resizable.js"></script>
+  
+  <script>
+    // 全局面板实例
+    window.panels = {};
+    
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      initPanels();
+      loadTestData();
+    });
+    
+    function initPanels() {
+      const workspace = document.getElementById('workspace');
+      const workspaceRect = workspace.getBoundingClientRect();
+      
+      // 1. 当前任务面板 - 左上
+      window.panels.taskPanel = new TaskPanelResizable('taskPanelContainer', {
+        title: '📋 当前任务',
+        x: 20,
+        y: 20,
+        width: 320,
+        height: 280,
+        tasks: [
+          { id: 1, title: '实现 Safety 模块', agent: '凌刻', priority: 'high', done: true },
+          { id: 2, title: '优化 Docker 配置', agent: '凌刻', priority: 'medium', done: false },
+          { id: 3, title: '设计前端界面', agent: '小绘', priority: 'high', done: false }
+        ]
+      });
+      window.panels.taskPanel.mount();
+      
+      // 2. 未完成任务面板 - 左下
+      window.panels.pendingPanel = new TaskPanelResizable('pendingPanelContainer', {
+        title: '⏳ 未完成任务',
+        x: 20,
+        y: 320,
+        width: 320,
+        height: 250,
+        filter: 'active',
+        tasks: [
+          { id: 4, title: '编写 API 文档', agent: '布土拨', priority: 'low', done: false },
+          { id: 5, title: '性能测试', agent: '岩甲', priority: 'high', done: false }
+        ]
+      });
+      window.panels.pendingPanel.mount();
+      
+      // 3. 交互日志面板 - 中间
+      window.panels.logPanel = new InteractionLogResizable('logPanelContainer', {
+        title: '👁️ Agent 交互日志',
+        x: 360,
+        y: 100,
+        width: 450,
+        height: 400
+      });
+      window.panels.logPanel.mount();
+      
+      // 监听面板事件
+      Object.values(window.panels).forEach(panel => {
+        panel.container.addEventListener('panel:move', (e) => {
+          console.log('面板移动:', e.detail);
+        });
+        panel.container.addEventListener('panel:resize', (e) => {
+          console.log('面板调整大小:', e.detail);
+        });
+      });
+    }
+    
+    function loadTestData() {
+      // 添加一些测试日志
+      const logs = [
+        { type: 'system', agent: '系统', content: 'ShuHub 系统启动完成' },
+        { type: 'info', agent: '凌刻', content: '正在初始化 `SafetyModule`' },
+        { type: 'success', agent: '凌刻', content: '✅ Safety 模块加载成功' },
+        { type: 'info', agent: '小绘', content: '开始设计前端界面' },
+        { type: 'command', agent: '岩甲', content: '执行安全检查: `checkSecurity()`' }
+      ];
+      
+      logs.forEach((log, i) => {
+        setTimeout(() => {
+          window.panels.logPanel.add({
+            ...log,
+            time: new Date().toLocaleTimeString('zh-CN', { hour12: false })
+          });
+        }, i * 500);
+      });
+    }
+    
+    // 重置布局
+    function resetLayout() {
+      window.panels.taskPanel.setState({ x: 20, y: 20 });
+      window.panels.pendingPanel.setState({ x: 20, y: 320 });
+      window.panels.logPanel.setState({ x: 360, y: 100 });
+      
+      Object.values(window.panels).forEach(panel => panel.render());
+    }
+    
+    // 显示/隐藏磁吸区
+    function toggleSnapZones() {
+      const zones = document.getElementById('snapZones');
+      zones.classList.toggle('active');
+    }
+    
+    // 添加测试日志
+    function addTestLog() {
+      const agents = ['凌刻', '小绘', '岩甲', '布土拨'];
+      const types = ['info', 'success', 'command'];
+      const messages = [
+        '正在处理任务...',
+        '✅ 任务完成',
+        '执行命令: `git push`',
+        '开始分析代码...',
+        '发现潜在问题'
+      ];
+      
+      const randomAgent = agents[Math.floor(Math.random() * agents.length)];
+      const randomType = types[Math.floor(Math.random() * types.length)];
+      const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+      
+      window.panels.logPanel.log(randomAgent, randomMessage, randomType);
+    }
+  </script>
+</body>
+</html>
