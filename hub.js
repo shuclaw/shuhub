@@ -1,12 +1,12 @@
 /**
- * Hub - TeamHub 模块化框架核心 (v2)
+ * Hub - ShuHub 模块化框架核心 (v2)
  * 
  * 整合所有模块，提供统一入口
  * 
- * 模块列表 (19个):
+ * 模块列表 (20个):
  * - 核心: BaseModule
  * - 数据: Memory, Storage, Cache
- * - 业务: Intent, Routing, Workflow, Approval
+ * - 业务: Intent, Routing, Workflow, Approval, Safety
  * - 执行: Agent, Connector, Sandbox, DMZ Agent
  * - 入口: Assistant (小智)
  * - 基础设施: Config, Logger, RateLimit, Auth, MessageBus, Monitor, Ports, Exporter
@@ -30,6 +30,7 @@ const { IntentModule } = require('./modules/intent');
 const { RoutingModule } = require('./modules/routing');
 const { WorkflowModule } = require('./modules/workflow');
 const { ApprovalModule } = require('./modules/approval');
+const { SafetyModule } = require('./modules/safety');
 
 // 执行
 const { AgentModule } = require('./modules/agent');
@@ -67,6 +68,7 @@ class Hub extends BaseModule {
         this.routing = new RoutingModule();
         this.workflow = new WorkflowModule();
         this.approval = new ApprovalModule();
+        this.safety = new SafetyModule();
         
         // 执行模块
         this.agent = new AgentModule();
@@ -182,6 +184,11 @@ class Hub extends BaseModule {
         // 初始化审批 (依赖 storage)
         if (config.approval) {
             await this.approval.init(config.approval);
+        }
+        
+        // 初始化安全模块
+        if (config.safety) {
+            await this.safety.init(config.safety);
         }
         
         // 初始化导出器
@@ -615,7 +622,7 @@ class Hub extends BaseModule {
         const moduleNames = [
             'config', 'logger', 'messageBus', 'monitor',
             'cache', 'storage', 'memory',
-            'intent', 'routing', 'workflow', 'approval',
+            'intent', 'routing', 'workflow', 'approval', 'safety',
             'agent', 'connector', 'sandbox', 'dmzAgent',
             'assistant', 'rateLimit', 'auth', 'ports', 'exporter'
         ];
@@ -672,6 +679,7 @@ class Hub extends BaseModule {
                 routing: getModuleStatus(this.routing),
                 workflow: getModuleStatus(this.workflow),
                 approval: getModuleStatus(this.approval),
+                safety: getModuleStatus(this.safety),
                 agent: getModuleStatus(this.agent),
                 connector: getModuleStatus(this.connector),
                 sandbox: getModuleStatus(this.sandbox),

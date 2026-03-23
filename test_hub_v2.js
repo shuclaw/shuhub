@@ -27,6 +27,7 @@ async function test() {
         rateLimit: {},
         auth: { tenants: [] },
         approval: {},
+        safety: {},
         exporter: { root: '/tmp/exports' },
         cache: {},
         connector: { connectors: [] },
