@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShuHub - 分页白板画布</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      background: #0f172a;
+      height: 100vh; 
+      overflow: hidden; 
+    }
+  </style>
+</head>
+<body>
+  <div id="pageCanvas"></div>
+
+  <script src="components/base.js"></script>
+  <script src="components/page-canvas.js"></script>
+  
+  <script>
+    // 初始化分页白板
+    const canvas = new PageCanvas('pageCanvas', {
+      pageSize: { width: 1920, height: 1080 },
+      zoom: 0.7,
+      pages: [
+        { id: 'page-1', name: '项目概览', index: 0 },
+        { id: 'page-2', name: '技术架构', index: 1 }
+      ],
+      elements: {
+        0: [
+          // 第一页：项目概览
+          {
+            id: 'el-1',
+            type: 'agent',
+            x: 100, y: 100, width: 200, height: 80,
+            content: { name: '凌刻', role: '技术开发' },
+            style: { avatar: '🔧', color: '#dbeafe' }
+          },
+          {
+            id: 'el-2',
+            type: 'agent',
+            x: 350, y: 100, width: 200, height: 80,
+            content: { name: '小绘', role: '创意设计' },
+            style: { avatar: '🎨', color: '#fce7f3' }
+          },
+          {
+            id: 'el-3',
+            type: 'task',
+            x: 100, y: 220, width: 180, height: 100,
+            content: { title: '实现 Safety 模块', priority: 'high', done: true, agent: '凌刻' }
+          },
+          {
+            id: 'el-4',
+            type: 'task',
+            x: 310, y: 220, width: 180, height: 100,
+            content: { title: '设计前端界面', priority: 'high', done: false, agent: '小绘' }
+          },
+          {
+            id: 'el-5',
+            type: 'note',
+            x: 600, y: 100, width: 250, height: 150,
+            content: { text: '项目目标：\n1. 模块化架构\n2. 安全防护\n3. 团队协作' },
+            style: { color: '#fef3c7' }
+          }
+        ],
+        1: [
+          // 第二页：技术架构
+          {
+            id: 'el-6',
+            type: 'text',
+            x: 50, y: 50, width: 400, height: 60,
+            content: { text: 'ShuHub 技术架构' },
+            style: { fontSize: 32 }
+          },
+          {
+            id: 'el-7',
+            type: 'code',
+            x: 50, y: 150, width: 500, height: 300,
+            content: {
+              language: 'javascript',
+              code: `// ShuHub Core Architecture
+class Hub {
+  constructor() {
+    this.modules = new Map();
+    this.agents = new Map();
+  }
+  
+  async init() {
+    await this.loadModules();
+    await this.connectAgents();
+  }
+}`
+            }
+          },
+          {
+            id: 'el-8',
+            type: 'agent',
+            x: 600, y: 150, width: 200, height: 80,
+            content: { name: '岩甲', role: '安全运维' },
+            style: { avatar: '🛡️', color: '#fef3c7' }
+          }
+        ]
+      }
+    });
+    
+    canvas.mount();
+    
+    // 自动适应屏幕
+    setTimeout(() => canvas.fitToScreen(), 100);
+    
+    console.log('🎨 ShuHub 分页白板已加载');
+  </script>
+</body>
+</html>
