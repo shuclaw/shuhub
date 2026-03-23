@@ -1,82 +1,60 @@
-# TeamHub 模块化框架
+# ShuHub
 
-> 🔧 可拼接的 Agent 协作系统 - 企业级私有化部署方案
+> 普通人也能打造自己的 Agent 团队
 
-## 完整模块列表 (19个)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-| 模块 | 文件 | 说明 |
-|------|------|------|
-| **核心** |||
-| BaseModule | base.js | 基类 |
-| Hub | hub.js | 核心调度器 |
-| **数据** |||
-| Memory | modules/memory.js | 记忆存储 + 向量检索 |
-| Storage | modules/storage.js | 多Provider存储 |
-| Cache | modules/cache.js | Redis缓存层 |
-| **业务** |||
-| Intent | modules/intent.js | 意图分类 |
-| Routing | modules/routing.js | 智能路由 |
-| Workflow | modules/workflow.js | 工作流引擎 |
-| Approval | modules/approval.js | 审批工作流 |
-| **执行** |||
-| Agent | modules/agent.js | Agent管理 |
-| Connector | modules/connector.js | 外部Agent连接器 |
-| Sandbox | modules/sandbox.js | 代码执行隔离 |
-| DMZ Agent | modules/dmz_agent.js | 安全上网隔离 |
-| **入口** |||
-| Assistant | modules/assistant.js | 小智前台 |
-| **基础设施** |||
-| Config | modules/config.js | YAML配置 |
-| Logger | modules/logger.js | 结构化日志 |
-| RateLimit | modules/ratelimit.js | 限流器 |
-| Auth | modules/auth.js | 认证/多租户 |
-| MessageBus | modules/messagebus.js | 消息总线 |
-| Monitor | modules/monitor.js | 监控告警 |
-| Ports | modules/ports.js | 端口配置 |
-| Exporter | modules/exporter.js | 文件导出 |
+## 是什么
 
-## 快速启动
+ShuHub 是一个模块化的 AI Agent 协作框架，让你像组建团队一样组建 AI Agent 集群。
+
+```
+你 → 小智(前台) → Hub(调度) → Agent团队(凌刻/岩甲/小绘/布土拨)
+```
+
+## 核心模块
+
+| 模块 | 说明 |
+|------|------|
+| Intent | 意图分类，理解用户想做什么 |
+| Routing | 智能路由，分发任务到对的Agent |
+| Workflow | 工作流引擎，管理任务流程 |
+| Memory | 记忆存储，Agent越用越聪明 |
+| Storage | 数据持久化，数据不会丢 |
+| Monitor | 监控告警，随时掌握系统状态 |
+| APIGateway | 多API管理，智能切换降成本 |
+| Sandbox | 代码执行隔离，安全运行第三方代码 |
+
+## 快速开始
 
 ```bash
-# 开发模式
+# 克隆
+git clone https://github.com/shuclaw/shuhub.git
+cd shuhub
+
+# 安装依赖
 npm install
-node server.js
 
-# Docker 部署
-docker-compose up -d
+# 启动
+npm start
 ```
 
-## 配置
+## 开发文档
 
-```yaml
-# config.yaml
-assistant:
-  name: "小智"
-  model: "qwen2.5-0.5B"
-  
-ports:
-  api: 3001
-  openclaw: 18789
-  
-agents:
-  - id: "openclaw"
-    type: "openclaw"
-    endpoint: "http://localhost:18789"
-```
+- [接口文档](INTERFACES.md) - 模块接口定义
+- [框架文档](FRAMEWORK.md) - 架构设计
 
-## API
+## 技术栈
 
-| 接口 | 方法 | 说明 |
-|------|------|------|
-| /health | GET | 健康检查 |
-| /status | GET | 系统状态 |
-| /ports | GET | 端口配置 |
-| /tasks | POST | 发送任务 |
-| /assistant/chat | POST | 小智对话 |
-| /approval/pending | GET | 待审批 |
-| /approval/approve | POST | 批准 |
-| /exporter/stats | GET | 导出统计 |
+- Node.js 18+
+- Redis (缓存/消息队列)
+- PostgreSQL (数据持久化)
+- Docker (容器化部署)
 
-## License
+## 开源协议
 
-Proprietary - 红鼠实验室
+MIT License
+
+---
+
+**ShuHub - 让每个人都能拥有自己的 AI 团队**
