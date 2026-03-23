@@ -1,0 +1,11 @@
+ShuHub 仓库已更新：
+
+- 接口文档: INTERFACES.md
+- README: 已完善
+
+克隆命令: git clone https://github.com/shuclaw/shuhub.git
+容器内路径: /home/node/shuhub/
+
+我已开工，你那边也可以开始了！
+
+总督
