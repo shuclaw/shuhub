@@ -3,7 +3,7 @@
  * 管理插件的注册、加载、激活和卸载
  */
 
-import type { Plugin, PluginManifest, PluginContext } from '../types';
+import type { Plugin, PluginContext } from '../types';
 
 export class PluginManager {
   private plugins: Map<string, Plugin> = new Map();

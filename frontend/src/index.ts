@@ -44,6 +44,7 @@ export class ShuHubApp {
     
     // 初始化插件管理器
     this.pluginManager = new PluginManager({
+      workspace: this.workspace,
       events: this.events,
       storage: this.storage,
       logger: this.logger
@@ -86,8 +87,8 @@ export class ShuHubApp {
    */
   private async restoreWorkspace(): Promise<void> {
     try {
-      const saved = await this.storage.get('workspace');
-      if (saved) {
+      const saved = await this.storage.get<any>('workspace');
+      if (saved && saved.pages) {
         this.workspace.import(saved);
       }
     } catch (err) {

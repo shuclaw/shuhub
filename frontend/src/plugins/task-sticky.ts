@@ -65,7 +65,7 @@ class TaskStickyComponent {
   
   render(): void {
     const { content, style } = this.data;
-    const priorityColors = {
+    const priorityColors: Record<string, string> = {
       high: '#fee2e2',
       medium: '#fef3c7',
       low: '#d1fae5'

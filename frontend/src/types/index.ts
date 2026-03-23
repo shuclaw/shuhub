@@ -43,7 +43,7 @@ export interface Workspace {
   removePage(index: number): void;
   goToPage(index: number): void;
   
-  addElement(element: ElementData): void;
+  addElement(element: CreateElementData): ElementData;
   removeElement(id: string): void;
   updateElement(id: string, updates: Partial<ElementData>): void;
   
@@ -83,6 +83,8 @@ export interface ElementData {
   style?: ElementStyle;
   metadata?: Record<string, any>;
 }
+
+export type CreateElementData = Omit<ElementData, 'id'>;
 
 export interface ElementStyle {
   backgroundColor?: string;
