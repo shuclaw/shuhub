@@ -622,7 +622,7 @@ class Hub extends BaseModule {
         const moduleNames = [
             'config', 'logger', 'messageBus', 'monitor',
             'cache', 'storage', 'memory',
-            'intent', 'routing', 'workflow', 'approval',
+            'intent', 'routing', 'workflow', 'approval', 'safety',
             'agent', 'connector', 'sandbox', 'dmzAgent',
             'assistant', 'rateLimit', 'auth', 'ports', 'exporter'
         ];
