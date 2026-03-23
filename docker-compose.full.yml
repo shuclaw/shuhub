@@ -1,0 +1,142 @@
+# ShuHub - 完整 Docker 配置
+# 
+# 快速启动: docker-compose up -d
+# 查看日志: docker-compose logs -f
+# 停止: docker-compose down
+
+version: '3.8'
+
+services:
+  # ShuHub 核心服务
+  teamhub:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shuhub-core
+    ports:
+      - "3001:3001"     # API 端口
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - REDIS_URL=redis://redis:6379
+      - POSTGRES_URL=postgresql://shuhub:shuhub@postgres:5432/shuhub
+      - LLM_URL=http://ollama:11434
+      - LLM_MODEL=qwen2.5-coder:7b
+      - SAFETY_MODE=strict
+      - ENABLE_SAFETY=true
+      - ENABLE_SANDBOX=true
+    volumes:
+      - teamhub-data:/data
+      - teamhub-workspace:/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - shuhub-network
+
+  # Redis - 缓存与会话存储
+  redis:
+    image: redis:7-alpine
+    container_name: shuhub-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - shuhub-network
+
+  # PostgreSQL - 数据持久化
+  postgres:
+    image: postgres:16-alpine
+    container_name: shuhub-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=shuhub
+      - POSTGRES_PASSWORD=shuhub
+      - POSTGRES_DB=shuhub
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shuhub"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - shuhub-network
+
+  # Ollama - 本地 LLM（可选）
+  ollama:
+    image: ollama/ollama:latest
+    container_name: shuhub-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    restart: unless-stopped
+    # 如果不需要 GPU，注释掉下面这行
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - shuhub-network
+    profiles:
+      - with-ollama  # 使用: docker-compose --profile with-ollama up -d
+
+  # 前端 Web UI
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: shuhub-frontend
+    ports:
+      - "80:80"
+    environment:
+      - API_URL=http://teamhub:3001
+      - WS_URL=ws://teamhub:3001
+    depends_on:
+      - teamhub
+    restart: unless-stopped
+    networks:
+      - shuhub-network
+    profiles:
+      - with-frontend  # 使用: docker-compose --profile with-frontend up -d
+
+volumes:
+  teamhub-data:
+  teamhub-workspace:
+  redis-data:
+  postgres-data:
+  ollama-data:
+
+networks:
+  shuhub-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
