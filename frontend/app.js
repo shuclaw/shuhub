@@ -1,315 +1,359 @@
 /**
- * ShuHub Frontend - Web UI 交互
+ * ShuHub Frontend - 3段式设计
+ * 左：Agent 成员 | 中：任务+聊天 | 右：代码浏览器
  */
 
 class ShuHubUI {
-    constructor() {
-        this.messages = document.getElementById('messages');
-        this.messageInput = document.getElementById('messageInput');
-        this.sendBtn = document.getElementById('sendBtn');
-        this.logContainer = document.getElementById('logContainer');
-        
-        this.currentAgent = 'assistant';
-        this.agents = new Map();
-        this.tasks = new Map();
-        this.ws = null;
-        
-        this.init();
+  constructor() {
+    this.agents = [
+      { id: 'lingke', name: '凌刻', role: '技术开发', avatar: '🔧', color: '#dbeafe', status: 'online', progress: 75 },
+      { id: 'xiaohui', name: '小绘', role: '创意设计', avatar: '🎨', color: '#fce7f3', status: 'online', progress: 60 },
+      { id: 'yanjia', name: '岩甲', role: '安全运维', avatar: '🛡️', color: '#fef3c7', status: 'busy', progress: 90 },
+      { id: 'bufu', name: '布土拨', role: '运营客服', avatar: '📊', color: '#d1fae5', status: 'offline', progress: 0 },
+      { id: 'assistant', name: '小智', role: '前台助手', avatar: '🤖', color: '#f3e8ff', status: 'online', progress: 30 }
+    ];
+    
+    this.tasks = [
+      { id: 1, title: '实现 Safety 模块', agent: 'lingke', priority: 'high', done: true },
+      { id: 2, title: '优化 Docker 配置', agent: 'lingke', priority: 'medium', done: false },
+      { id: 3, title: '设计前端界面', agent: 'xiaohui', priority: 'high', done: false }
+    ];
+    
+    this.messages = [
+      { id: 1, agent: 'assistant', content: '你好！我是小智，有什么可以帮你的？', time: '12:30', type: 'in' }
+    ];
+    
+    this.currentAgent = 'assistant';
+    this.tasksVisible = true;
+    
+    this.init();
+  }
+  
+  init() {
+    this.renderAgents();
+    this.renderTasks();
+    this.renderMessages();
+    this.renderCode();
+    this.startStatusUpdate();
+    console.log('🔧 ShuHub 3段式 UI initialized');
+  }
+  
+  /**
+   * 渲染左侧 Agent 列表
+   */
+  renderAgents() {
+    const container = document.getElementById('agentList');
+    
+    // 添加"在线"分组标题
+    const onlineAgents = this.agents.filter(a => a.status !== 'offline');
+    const offlineAgents = this.agents.filter(a => a.status === 'offline');
+    
+    let html = '<div class="sidebar-title">在线</div>';
+    
+    onlineAgents.forEach(agent => {
+      html += this.createAgentCard(agent);
+    });
+    
+    if (offlineAgents.length > 0) {
+      html += '<div class="sidebar-title" style="margin-top: 16px;">离线</div>';
+      offlineAgents.forEach(agent => {
+        html += this.createAgentCard(agent);
+      });
     }
     
-    init() {
-        this.bindEvents();
-        this.connectWebSocket();
-        this.loadAgents();
-        console.log('🔧 ShuHub UI initialized');
-    }
+    container.innerHTML = html;
     
-    bindEvents() {
-        // 发送消息
-        this.sendBtn.addEventListener('click', () => this.sendMessage());
-        this.messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.sendMessage();
-        });
-        
-        // Agent 切换
-        document.querySelectorAll('.agent-item').forEach(item => {
-            item.addEventListener('click', () => {
-                document.querySelectorAll('.agent-item').forEach(i => i.classList.remove('active'));
-                item.classList.add('active');
-                this.currentAgent = item.dataset.agent;
-                this.addLog(`切换至 ${this.getAgentName(this.currentAgent)}`, 'info');
-            });
-        });
-    }
+    // 绑定点击事件
+    container.querySelectorAll('.agent-card').forEach(card => {
+      card.addEventListener('click', () => {
+        this.selectAgent(card.dataset.agentId);
+      });
+    });
+  }
+  
+  createAgentCard(agent) {
+    const isActive = agent.id === this.currentAgent;
+    const statusClass = agent.status === 'online' ? '' : (agent.status === 'busy' ? 'busy' : 'offline');
+    const cardClass = `agent-card ${isActive ? 'active' : ''} ${agent.status === 'offline' ? 'offline' : ''}`;
     
-    /**
-     * 连接 WebSocket
-     */
-    connectWebSocket() {
-        const wsUrl = window.location.protocol === 'https:' 
-            ? `wss://${window.location.host}/ws`
-            : `ws://${window.location.host}/ws`;
-        
-        try {
-            this.ws = new WebSocket(wsUrl);
-            
-            this.ws.onopen = () => {
-                console.log('✅ WebSocket connected');
-                this.addLog('WebSocket 已连接', 'success');
-            };
-            
-            this.ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                this.handleWebSocketMessage(data);
-            };
-            
-            this.ws.onclose = () => {
-                console.log('❌ WebSocket disconnected');
-                this.addLog('WebSocket 断开，5秒后重连...', 'warning');
-                setTimeout(() => this.connectWebSocket(), 5000);
-            };
-            
-            this.ws.onerror = (err) => {
-                console.error('WebSocket error:', err);
-                this.addLog('WebSocket 错误', 'error');
-            };
-            
-        } catch (err) {
-            console.warn('WebSocket not available, using polling');
-            this.startPolling();
-        }
-    }
-    
-    /**
-     * 处理 WebSocket 消息
-     */
-    handleWebSocketMessage(data) {
-        switch (data.type) {
-            case 'message':
-                this.addMessage(data.agent, data.content, false);
-                break;
-            case 'task_update':
-                this.updateTask(data.task);
-                break;
-            case 'agent_status':
-                this.updateAgentStatus(data.agent, data.status);
-                break;
-            case 'log':
-                this.addLog(data.message, data.level);
-                break;
-        }
-    }
-    
-    /**
-     * 轮询模式（WebSocket 不可用时）
-     */
-    startPolling() {
-        setInterval(() => {
-            this.fetchUpdates();
-        }, 3000);
-    }
-    
-    async fetchUpdates() {
-        try {
-            const response = await fetch('/api/status');
-            const data = await response.json();
-            this.updateUI(data);
-        } catch (err) {
-            console.error('Fetch error:', err);
-        }
-    }
-    
-    /**
-     * 发送消息
-     */
-    async sendMessage() {
-        const content = this.messageInput.value.trim();
-        if (!content) return;
-        
-        // 添加用户消息
-        this.addMessage('user', content, true);
-        this.messageInput.value = '';
-        
-        // 发送给后端
-        try {
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message: content,
-                    agent: this.currentAgent,
-                    sessionId: this.getSessionId()
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                // 显示 Agent 回复
-                setTimeout(() => {
-                    this.addMessage(data.agent, data.response, false);
-                }, 500);
-                
-                // 更新任务
-                if (data.task) {
-                    this.updateTask(data.task);
-                }
-            } else {
-                this.addMessage('system', `错误: ${data.error}`, false);
-            }
-            
-        } catch (err) {
-            this.addMessage('system', '网络错误，请重试', false);
-            console.error('Send error:', err);
-        }
-    }
-    
-    /**
-     * 添加消息到界面
-     */
-    addMessage(agent, content, isUser = false) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${isUser ? 'user' : ''}`;
-        
-        const agentInfo = this.getAgentInfo(agent);
-        const time = new Date().toLocaleTimeString('zh-CN', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-        });
-        
-        messageDiv.innerHTML = `
-            <div class="message-avatar" style="background: ${agentInfo.color}">
-                ${agentInfo.avatar}
+    return `
+      <div class="${cardClass}" data-agent-id="${agent.id}">
+        <div class="agent-header">
+          <div class="agent-avatar" style="background: ${agent.color}">
+            ${agent.avatar}
+            <span class="avatar-badge ${statusClass}"></span>
+          </div>
+          <div class="agent-info">
+            <h4>${agent.name}</h4>
+            <p>${agent.role}</p>
+          </div>
+        </div>
+        ${agent.status !== 'offline' ? `
+          <div class="agent-status-bar">
+            <div class="label">
+              <span>当前任务</span>
+              <span>${agent.progress}%</span>
             </div>
-            <div class="message-content">
-                <div class="message-header">
-                    <span class="message-author">${agentInfo.name}</span>
-                    <span class="message-time">${time}</span>
-                </div>
-                <div class="message-body">${this.escapeHtml(content)}</div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: ${agent.progress}%"></div>
             </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+  
+  /**
+   * 渲染任务列表
+   */
+  renderTasks() {
+    const list = document.getElementById('taskList');
+    const count = document.getElementById('taskCount');
+    
+    count.textContent = this.tasks.length;
+    
+    list.innerHTML = this.tasks.map(task => `
+      <div class="task-item" data-task-id="${task.id}">
+        <div class="task-checkbox ${task.done ? 'checked' : ''}" onclick="toggleTask(${task.id})">
+          ${task.done ? '✓' : ''}
+        </div>
+        <div class="task-content">
+          <div class="task-title" style="${task.done ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${task.title}</div>
+          <div class="task-meta">@${this.getAgentName(task.agent)} · 2小时前</div>
+        </div>
+        <div class="task-priority priority-${task.priority}"></div>
+      </div>
+    `).join('');
+  }
+  
+  /**
+   * 渲染聊天消息
+   */
+  renderMessages() {
+    const container = document.getElementById('chatMessages');
+    
+    container.innerHTML = this.messages.map(msg => {
+      const agent = this.agents.find(a => a.id === msg.agent);
+      const isOwn = msg.type === 'out';
+      const isSystem = msg.type === 'system';
+      
+      if (isSystem) {
+        return `
+          <div class="message system">
+            <div class="message-bubble">${msg.content}</div>
+          </div>
         `;
-        
-        this.messages.appendChild(messageDiv);
-        this.messages.scrollTop = this.messages.scrollHeight;
-    }
+      }
+      
+      return `
+        <div class="message ${isOwn ? 'own' : 'in'}">
+          ${!isOwn ? `<div class="message-avatar" style="background: ${agent?.color || '#e2e8f0'}">${agent?.avatar || '👤'}</div>
+          ` : ''}
+          <div class="message-content">
+            ${!isOwn ? `<div class="message-header">
+              <span class="message-author">${agent?.name || '未知'}</span>
+              <span class="message-time">${msg.time}</span>
+            </div>` : ''}
+            <div class="message-bubble">${this.escapeHtml(msg.content)}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
     
-    /**
-     * 获取 Agent 信息
-     */
-    getAgentInfo(agent) {
-        const agents = {
-            user: { name: '你', avatar: '👤', color: '#667eea' },
-            assistant: { name: '小智', avatar: '🤖', color: '#f3e8ff' },
-            lingke: { name: '凌刻', avatar: '🔧', color: '#dbeafe' },
-            xiaohui: { name: '小绘', avatar: '🎨', color: '#fce7f3' },
-            yanjia: { name: '岩甲', avatar: '🛡️', color: '#fef3c7' },
-            bufu: { name: '布土拨', avatar: '📊', color: '#d1fae5' },
-            system: { name: '系统', avatar: '⚙️', color: '#fee2e2' }
-        };
-        return agents[agent] || agents.system;
+    container.scrollTop = container.scrollHeight;
+  }
+  
+  /**
+   * 渲染代码浏览器
+   */
+  renderCode() {
+    const code = `// Safety Module - 安全防护
+class SafetyModule {
+  constructor() {
+    this.config = {
+      allowDelete: false,
+      allowExecute: false,
+      forbiddenPaths: ['/etc', '/usr'],
+      forbiddenCommands: ['rm -rf', 'format']
+    };
+  }
+  
+  checkFile(path) {
+    // 检查禁止路径
+    for (const forbidden of this.config.forbiddenPaths) {
+      if (path.includes(forbidden)) {
+        throw new Error('Forbidden path');
+      }
     }
-    
-    getAgentName(agentId) {
-        return this.getAgentInfo(agentId).name;
+    return true;
+  }
+  
+  checkCommand(cmd) {
+    // 检查危险命令
+    for (const forbidden of this.config.forbiddenCommands) {
+      if (cmd.includes(forbidden)) {
+        throw new Error('Dangerous command');
+      }
     }
+    return true;
+  }
+}`;
+
+    const container = document.getElementById('codeContent');
+    const lines = code.split('\n');
     
-    /**
-     * 更新任务显示
-     */
-    updateTask(task) {
-        // 简化实现，实际应该更新右侧面板的任务列表
-        console.log('Task update:', task);
+    container.innerHTML = lines.map((line, i) => {
+      // 简单的语法高亮
+      let highlighted = line
+        .replace(/\b(class|constructor|const|let|var|if|for|of|return|throw|new|true|false)\b/g, '<span class="keyword">$1</span>')
+        .replace(/(['"])(.*?)\1/g, '<span class="string">$1$2$1</span>')
+        .replace(/\/\/.*$/, match => `<span class="comment">${match}</span>`)
+        .replace(/\b(checkFile|checkCommand|includes|forEach)\b/g, '<span class="function">$1</span>');
+      
+      return `
+        <div class="code-line">
+          <span class="line-number">${i + 1}</span>
+          <span class="line-content">${highlighted || '&nbsp;'}</span>
+        </div>
+      `;
+    }).join('');
+  }
+  
+  /**
+   * 选择 Agent
+   */
+  selectAgent(agentId) {
+    this.currentAgent = agentId;
+    this.renderAgents();
+    this.addMessage('system', `已切换到 ${this.getAgentName(agentId)}`, '12:35');
+  }
+  
+  /**
+   * 发送消息
+   */
+  sendMessage() {
+    const input = document.getElementById('messageInput');
+    const content = input.value.trim();
+    
+    if (!content) return;
+    
+    // 添加用户消息
+    this.addMessage('out', content, this.getCurrentTime());
+    
+    // 模拟回复
+    setTimeout(() => {
+      const agent = this.agents.find(a => a.id === this.currentAgent);
+      const reply = this.generateReply(content, agent);
+      this.addMessage(agent?.id || 'assistant', reply, this.getCurrentTime());
+    }, 1000);
+    
+    input.value = '';
+  }
+  
+  addMessage(type, content, time) {
+    const agent = type === 'out' ? null : (type === 'system' ? null : type);
+    this.messages.push({
+      id: Date.now(),
+      agent: agent,
+      content,
+      time,
+      type: type === 'out' ? 'out' : (type === 'system' ? 'system' : 'in')
+    });
+    this.renderMessages();
+  }
+  
+  generateReply(content, agent) {
+    const replies = {
+      lingke: `收到，我来处理：${content.substring(0, 20)}...`,
+      xiaohui: `好的，我正在设计相关方案。`,
+      yanjia: `正在检查安全策略...`,
+      assistant: `我来帮您转达这个需求。`
+    };
+    return replies[agent?.id] || '收到，正在处理中...';
+  }
+  
+  /**
+   * 切换任务面板
+   */
+  toggleTasks() {
+    this.tasksVisible = !this.tasksVisible;
+    const list = document.getElementById('taskList');
+    const toggle = document.getElementById('taskToggle');
+    const header = document.querySelector('.task-header');
+    
+    list.classList.toggle('collapsed', !this.tasksVisible);
+    toggle.classList.toggle('collapsed', !this.tasksVisible);
+    header.classList.toggle('collapsed', !this.tasksVisible);
+  }
+  
+  /**
+   * 切换任务完成状态
+   */
+  toggleTask(taskId) {
+    const task = this.tasks.find(t => t.id === taskId);
+    if (task) {
+      task.done = !task.done;
+      this.renderTasks();
     }
-    
-    /**
-     * 更新 Agent 状态
-     */
-    updateAgentStatus(agent, status) {
-        const agentItem = document.querySelector(`[data-agent="${agent}"]`);
-        if (agentItem) {
-            const statusEl = agentItem.querySelector('.agent-status');
-            statusEl.className = `agent-status status-${status}`;
+  }
+  
+  /**
+   * 清空聊天
+   */
+  clearChat() {
+    this.messages = [];
+    this.renderMessages();
+  }
+  
+  /**
+   * 获取 Agent 名称
+   */
+  getAgentName(agentId) {
+    const agent = this.agents.find(a => a.id === agentId);
+    return agent?.name || agentId;
+  }
+  
+  /**
+   * 获取当前时间
+   */
+  getCurrentTime() {
+    return new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+  }
+  
+  /**
+   * 转义 HTML
+   */
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+  
+  /**
+   * 状态更新模拟
+   */
+  startStatusUpdate() {
+    setInterval(() => {
+      this.agents.forEach(agent => {
+        if (agent.status !== 'offline') {
+          // 随机微调进度
+          const change = Math.random() > 0.5 ? 1 : -1;
+          agent.progress = Math.max(0, Math.min(100, agent.progress + change));
         }
-    }
-    
-    /**
-     * 添加日志
-     */
-    addLog(message, level = 'info') {
-        const time = new Date().toLocaleTimeString('zh-CN', {
-            hour12: false
-        });
-        
-        const logDiv = document.createElement('div');
-        logDiv.className = 'log-entry';
-        logDiv.innerHTML = `
-            <span class="log-time">${time}</span>
-            <span class="log-${level}">[${level.toUpperCase()}]</span> ${this.escapeHtml(message)}
-        `;
-        
-        this.logContainer.appendChild(logDiv);
-        this.logContainer.scrollTop = this.logContainer.scrollHeight;
-        
-        // 限制日志数量
-        while (this.logContainer.children.length > 50) {
-            this.logContainer.removeChild(this.logContainer.firstChild);
-        }
-    }
-    
-    /**
-     * 加载 Agents
-     */
-    async loadAgents() {
-        try {
-            const response = await fetch('/api/agents');
-            const data = await response.json();
-            
-            if (data.agents) {
-                data.agents.forEach(agent => {
-                    this.agents.set(agent.id, agent);
-                });
-            }
-        } catch (err) {
-            console.warn('Failed to load agents:', err);
-        }
-    }
-    
-    /**
-     * 获取会话 ID
-     */
-    getSessionId() {
-        let sessionId = localStorage.getItem('shuhub_session');
-        if (!sessionId) {
-            sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('shuhub_session', sessionId);
-        }
-        return sessionId;
-    }
-    
-    /**
-     * 转义 HTML
-     */
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-    
-    /**
-     * 更新 UI
-     */
-    updateUI(data) {
-        // 更新 Agent 状态
-        if (data.agents) {
-            data.agents.forEach(agent => {
-                this.updateAgentStatus(agent.id, agent.status);
-            });
-        }
-    }
+      });
+      this.renderAgents();
+    }, 5000);
+  }
 }
+
+// 全局函数
+function toggleTasks() { window.shuhub.toggleTasks(); }
+function toggleTask(id) { window.shuhub.toggleTask(id); }
+function sendMessage() { window.shuhub.sendMessage(); }
+function clearChat() { window.shuhub.clearChat(); }
+function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
 
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
-    window.shuhub = new ShuHubUI();
+  window.shuhub = new ShuHubUI();
 });
