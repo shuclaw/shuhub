@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShuHub - 模块化组件</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      background: #f0f2f8; 
+      height: 100vh; 
+      overflow: hidden; 
+    }
+    
+    .app { 
+      display: flex; 
+      flex-direction: column; 
+      height: 100vh; 
+    }
+    
+    /* Header */
+    .header { 
+      height: 50px; 
+      background: rgba(255,255,255,0.98); 
+      border-bottom: 1px solid rgba(226,232,240,0.6); 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      padding: 0 16px; 
+    }
+    .logo { 
+      font-size: 18px; 
+      font-weight: 700; 
+      background: linear-gradient(135deg, #6366f1, #8b5cf6); 
+      -webkit-background-clip: text; 
+      -webkit-text-fill-color: transparent; 
+    }
+    
+    /* 主布局 */
+    .main { 
+      display: flex; 
+      flex: 1; 
+      overflow: hidden; 
+    }
+    
+    /* 左侧 Agent 列表 */
+    .sidebar-left { 
+      width: 220px; 
+      background: #f0f2f8; 
+      border-right: 1px solid rgba(226,232,240,0.6); 
+      overflow-y: auto;
+    }
+    
+    /* 中间区域 */
+    .center { 
+      flex: 1; 
+      display: flex; 
+      flex-direction: column; 
+      overflow: hidden;
+    }
+    
+    /* 中上：任务面板 */
+    .task-section {
+      background: #fff;
+      border-bottom: 1px solid rgba(226,232,240,0.6);
+    }
+    
+    /* 中下：交互日志 */
+    .interaction-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    /* 右侧区域 */
+    .sidebar-right { 
+      width: 420px; 
+      display: flex; 
+      flex-direction: column; 
+      background: #f0f2f8; 
+      border-left: 1px solid rgba(226,232,240,0.6);
+    }
+    
+    /* 右上：代码浏览器 */
+    .browser-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+    }
+    
+    .browser-panel {
+      flex: 1;
+      background: #0f172a;
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* 右下：会话窗口 */
+    .chat-section {
+      height: 320px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* 响应式 */
+    @media (max-width: 1200px) {
+      .sidebar-right { width: 360px; }
+    }
+    @media (max-width: 900px) {
+      .sidebar-right { display: none; }
+    }
+    @media (max-width: 640px) {
+      .sidebar-left { width: 70px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">🔧 ShuHub 模块化</div>
+      <div class="header-actions">
+        <span style="font-size: 12px; color: #64748b;">组件化设计</span>
+      </div>
+    </header>
+
+    <div class="main">
+      <!-- 左侧：Agent 列表 -->
+      <aside class="sidebar-left">
+        <div id="agentListContainer"></div>
+      </aside>
+
+      <!-- 中间 -->
+      <main class="center">
+        <!-- 中上：任务面板 -->
+        <div class="task-section">
+          <div id="taskPanelContainer"></div>
+        </div>
+
+        <!-- 中下：交互日志 -->
+        <div class="interaction-section">
+          <div id="interactionLogContainer"></div>
+        </div>
+      </main>
+
+      <!-- 右侧 -->
+      <aside class="sidebar-right">
+        <!-- 右上：代码浏览器 -->
+        <div class="browser-section">
+          <div class="browser-panel">
+            <div id="codeBrowserContainer"></div>
+          </div>
+        </div>
+
+        <!-- 右下：会话窗口 -->
+        <div class="chat-section">
+          <div id="chatWindowContainer"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- 加载组件 -->
+  <script src="components/base.js"></script>
+  <script src="components/agent-list.js"></script>
+  <script src="components/task-panel.js"></script>
+  <script src="components/interaction-log.js"></script>
+  <script src="components/code-browser.js"></script>
+  <script src="components/chat-window.js"></script>
+  <script src="app-modular.js"></script>
+</body>
+</html>
