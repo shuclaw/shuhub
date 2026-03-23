@@ -22,15 +22,17 @@
         .main { flex: 1; display: flex; flex-direction: column; }
         .header { background: white; padding: 15px 25px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
         .header h2 { font-size: 18px; color: #333; }
+        .header .status { font-size: 12px; color: #52c41a; }
         .content { flex: 1; padding: 20px; overflow-y: auto; }
         
         .dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
-        .stat-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center; }
+        .stat-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         .stat-card .value { font-size: 32px; font-weight: bold; color: #667eea; }
         .stat-card .label { font-size: 14px; color: #666; margin-top: 5px; }
         
         .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; display: flex; align-items: center; }
+        .card-title .icon { margin-right: 8px; }
         
         .agent-list { display: grid; gap: 10px; }
         .agent-row { display: flex; align-items: center; padding: 12px; background: #f8f9fa; border-radius: 8px; }
@@ -38,16 +40,15 @@
         .agent-row .info { flex: 1; }
         .agent-row .info h4 { font-size: 14px; }
         .agent-row .info span { font-size: 12px; color: #888; }
-        .agent-row .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #52c41a; }
+        .agent-row .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .agent-row .status-dot.online { background: #52c41a; }
+        .agent-row .status-dot.offline { background: #ddd; }
         
-        /* Voice */
-        .voice-panel { display: none; }
-        .voice-panel.active { display: block; }
         .voice-room { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
         .voice-room h3 { margin-bottom: 15px; }
         .voice-room input { padding: 10px; border: 1px solid #ddd; border-radius: 6px; width: 200px; margin-right: 10px; }
         .voice-controls { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
-        .voice-btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+        .voice-btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
         .voice-btn.join { background: #667eea; color: white; }
         .voice-btn.leave { background: #f5222d; color: white; }
         .voice-btn.call { background: #52c41a; color: white; }
@@ -56,7 +57,7 @@
         .voice-users { margin-top: 15px; min-height: 30px; }
         .voice-user { display: inline-block; background: #667eea; color: white; padding: 5px 12px; border-radius: 15px; font-size: 12px; margin: 2px; }
         .voice-video-container { display: flex; justify-content: center; gap: 20px; margin: 20px 0; }
-        .voice-video { width: 45%; max-width: 400px; background: #000; border-radius: 8px; display: none; }
+        .voice-video { width: 45%; background: #000; border-radius: 8px; display: none; }
         .voice-messages { background: #f8f9fa; border-radius: 8px; height: 200px; overflow-y: auto; padding: 15px; }
         .voice-message { margin-bottom: 8px; font-size: 14px; }
         .voice-message.system { color: #888; font-style: italic; }
@@ -73,18 +74,27 @@
                 <h1>ShuHub</h1>
                 <p>Agent 协作平台</p>
             </div>
+            
             <div class="nav-section">
-                <div class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')"><span class="icon">📊</span> 仪表盘</div>
-                <div class="nav-item" data-page="agents" onclick="showPage('agents')"><span class="icon">🤖</span> Agent 团队</div>
-                <div class="nav-item" data-page="voice" onclick="showPage('voice')"><span class="icon">🎤</span> 语音聊天</div>
-                <div class="nav-item" data-page="settings" onclick="showPage('settings')"><span class="icon">⚙️</span> 设置</div>
+                <div class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
+                    <span class="icon">📊</span> 仪表盘
+                </div>
+                <div class="nav-item" data-page="agents" onclick="showPage('agents')">
+                    <span class="icon">🤖</span> Agent 团队
+                </div>
+                <div class="nav-item" data-page="voice" onclick="showPage('voice')">
+                    <span class="icon">🎤</span> 语音聊天
+                </div>
+                <div class="nav-item" data-page="settings" onclick="showPage('settings')">
+                    <span class="icon">⚙️</span> 设置
+                </div>
             </div>
         </div>
         
         <div class="main">
             <div class="header">
                 <h2 id="pageTitle">仪表盘</h2>
-                <span style="color: #52c41a; font-size: 12px;">● 在线</span>
+                <div class="status">● 在线</div>
             </div>
             
             <div class="content">
@@ -96,58 +106,56 @@
                         <div class="stat-card"><div class="value">99.9%</div><div class="label">运行时间</div></div>
                     </div>
                     <div class="card" style="margin-top: 20px;">
-                        <div class="card-title">📋 系统状态</div>
+                        <div class="card-title"><span class="icon">📋</span> 系统状态</div>
                         <p>所有核心模块运行正常</p>
                     </div>
                 </div>
                 
                 <div id="page-agents" class="hidden">
                     <div class="card">
-                        <div class="card-title">🤖 Agent 团队</div>
+                        <div class="card-title"><span class="icon">🤖</span> Agent 团队</div>
                         <div class="agent-list">
-                            <div class="agent-row"><div class="avatar">🐀</div><div class="info"><h4>鼠爪</h4><span>总指挥 · 管理审批</span></div><div class="status-dot"></div></div>
-                            <div class="agent-row"><div class="avatar">🔧</div><div class="info"><h4>凌刻</h4><span>技术开发 · 代码安全</span></div><div class="status-dot"></div></div>
-                            <div class="agent-row"><div class="avatar">🛡️</div><div class="info"><h4>岩甲</h4><span>安全运维 · 监控</span></div><div class="status-dot"></div></div>
-                            <div class="agent-row"><div class="avatar">🎨</div><div class="info"><h4>小绘</h4><span>创意设计 · UI素材</span></div><div class="status-dot"></div></div>
-                            <div class="agent-row"><div class="avatar">🐝</div><div class="info"><h4>布土拨</h4><span>运营客服 · 推广</span></div><div class="status-dot"></div></div>
+                            <div class="agent-row"><div class="avatar">🐀</div><div class="info"><h4>鼠爪</h4><span>总指挥 · 管理审批</span></div><div class="status-dot online"></div></div>
+                            <div class="agent-row"><div class="avatar">🔧</div><div class="info"><h4>凌刻</h4><span>技术开发 · 代码安全</span></div><div class="status-dot online"></div></div>
+                            <div class="agent-row"><div class="avatar">🛡️</div><div class="info"><h4>岩甲</h4><span>安全运维 · 监控</span></div><div class="status-dot online"></div></div>
+                            <div class="agent-row"><div class="avatar">🎨</div><div class="info"><h4>小绘</h4><span>创意设计 · UI素材</span></div><div class="status-dot online"></div></div>
+                            <div class="agent-row"><div class="avatar">🐝</div><div class="info"><h4>布土拨</h4><span>运营客服 · 推广</span></div><div class="status-dot online"></div></div>
                         </div>
                     </div>
                 </div>
                 
                 <div id="page-voice" class="hidden">
-                    <div class="voice-panel active">
-                        <div class="voice-room">
-                            <h3>🎤 WebRTC 语音聊天室</h3>
-                            <div style="margin-top: 15px;">
-                                <input type="text" id="roomInput" value="shuhub" placeholder="房间名">
-                                <span id="roomStatus" style="color: #888;">未连接</span>
-                            </div>
-                            <div class="voice-controls">
-                                <button class="voice-btn join" id="joinBtn" onclick="joinRoom()">加入房间</button>
-                                <button class="voice-btn leave" id="leaveBtn" onclick="leaveRoom()" disabled>离开</button>
-                                <button class="voice-btn call" id="callBtn" onclick="startCall()" disabled>发起通话</button>
-                                <button class="voice-btn hangup" id="hangupBtn" onclick="endCall()" disabled>结束通话</button>
-                            </div>
-                            <div class="voice-users" id="voiceUsers"></div>
+                    <div class="voice-room">
+                        <h3>🎤 WebRTC 语音聊天室</h3>
+                        <div style="margin-top: 15px;">
+                            <input type="text" id="roomInput" value="shuhub" placeholder="房间名">
+                            <span id="roomStatus" style="color: #888;">未连接</span>
                         </div>
-                        
-                        <div class="voice-video-container">
-                            <video id="localVideo" class="voice-video" autoplay muted></video>
-                            <video id="remoteVideo" class="voice-video" autoplay></video>
+                        <div class="voice-controls">
+                            <button class="voice-btn join" id="joinBtn" onclick="joinRoom()">加入房间</button>
+                            <button class="voice-btn leave" id="leaveBtn" onclick="leaveRoom()" disabled>离开</button>
+                            <button class="voice-btn call" id="callBtn" onclick="startCall()" disabled>发起通话</button>
+                            <button class="voice-btn hangup" id="hangupBtn" onclick="endCall()" disabled>结束通话</button>
                         </div>
-                        
-                        <div class="card">
-                            <div class="card-title">💬 聊天消息</div>
-                            <div class="voice-messages" id="voiceMessages">
-                                <div class="voice-message system">加入房间开始语音聊天</div>
-                            </div>
+                        <div class="voice-users" id="voiceUsers"></div>
+                    </div>
+                    
+                    <div class="voice-video-container">
+                        <video id="localVideo" class="voice-video" autoplay muted></video>
+                        <video id="remoteVideo" class="voice-video" autoplay></video>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-title"><span class="icon">💬</span> 聊天消息</div>
+                        <div class="voice-messages" id="voiceMessages">
+                            <div class="voice-message system">加入房间开始语音聊天</div>
                         </div>
                     </div>
                 </div>
                 
                 <div id="page-settings" class="hidden">
                     <div class="card">
-                        <div class="card-title">⚙️ 系统设置</div>
+                        <div class="card-title"><span class="icon">⚙️</span> 系统设置</div>
                         <p>配置管理功能开发中...</p>
                     </div>
                 </div>
@@ -161,8 +169,7 @@
             document.getElementById('page-' + page).classList.remove('hidden');
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.querySelector('[data-page="' + page + '"]').classList.add('active');
-            const titles = {dashboard:'仪表盘',agents:'Agent 团队',voice:'语音聊天',settings:'系统设置'};
-            document.getElementById('pageTitle').textContent = titles[page] || page;
+            document.getElementById('pageTitle').textContent = {dashboard:'仪表盘',agents:'Agent 团队',voice:'语音聊天',settings:'系统设置'}[page] || page;
         }
         
         // WebRTC Voice
@@ -171,6 +178,7 @@
         let localStream = null;
         let peerConnection = null;
         let currentRoom = '';
+        
         const voiceServer = 'ws://43.130.228.192:3000';
         const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
         
@@ -219,20 +227,13 @@
         }
         
         function updateVoiceUsers(users) {
-            document.getElementById('voiceUsers').innerHTML = users.map(u => 
-                u !== myUserId ? '<span class="voice-user">' + u.substring(0, 8) + '</span>' : ''
-            ).join('');
+            document.getElementById('voiceUsers').innerHTML = users.map(u => u !== myUserId ? '<span class="voice-user">' + u.substring(0, 8) + '</span>' : '').join('');
         }
         
         function addVoiceMsg(from, msg, type) {
             const box = document.getElementById('voiceMessages');
             box.innerHTML += '<div class="voice-message ' + type + '"><strong>' + from + ':</strong> ' + msg + '</div>';
             box.scrollTop = box.scrollHeight;
-        }
-        
-        function getOtherUsers() {
-            const users = document.querySelectorAll('.voice-user');
-            return Array.from(users).map(u => u.textContent);
         }
         
         async function startCall() {
@@ -263,36 +264,8 @@
         }
         
         async function handleOffer(data) {
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                document.getElementById('localVideo').style.display = 'inline';
-                document.getElementById('localVideo').srcObject = localStream;
-                peerConnection = new RTCPeerConnection(config);
-                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-                peerConnection.ontrack = (e) => {
-                    document.getElementById('remoteVideo').style.display = 'inline';
-                    document.getElementById('remoteVideo').srcObject = e.streams[0];
-                };
-                peerConnection.onicecandidate = (e) => {
-                    if (e.candidate) ws.send(JSON.stringify({type: 'candidate', target: data.from, data: e.candidate}));
-                };
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.data));
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-                ws.send(JSON.stringify({type: 'answer', target: data.from, data: answer}));
-                addVoiceMsg('系统', '已接听', 'system');
-            } catch (e) { alert('接听失败: ' + e.message); }
-        }
-        
-        function endCall() {
-            if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
-            if (peerConnection) { peerConnection.close(); peerConnection = null; }
-            document.getElementById('localVideo').style.display = 'none';
-            document.getElementById('remoteVideo').style.display = 'none';
-            document.getElementById('callBtn').disabled = false;
-            document.getElementById('hangupBtn').disabled = true;
-            addVoiceMsg('系统', '通话已结束', 'system');
-        }
-    </script>
-</body>
-</html>
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            document.getElementById('localVideo').style.display = 'inline';
+            document.getElementById('localVideo').srcObject = localStream;
+            peerConnection = new RTCPeerConnection(config);
+            localStream.getTracks().forEach
