@@ -1,0 +1,113 @@
+# TeamHub 配置文件示例
+# 复制为 config.yaml 使用
+
+# LLM 配置
+llm:
+  url: "http://192.168.50.47:1234/v1/chat/completions"
+  model: "qwen2.5-coder-7b-instruct"
+  apiKey: ""  # 如需要
+
+# 记忆模块
+memory:
+  providers:
+    default:
+      type: memory  # memory / postgres / redis
+
+# 存储模块
+storage:
+  providers:
+    default:
+      type: memory  # memory / postgres / redis / localfs / s3
+
+# 意图分类规则
+intent:
+  rules:
+    - pattern: "代码|开发|debug|编程"
+      category: code
+      agents: ["凌刻"]
+      priority: 2
+    - pattern: "安全|审计|漏洞|入侵"
+      category: security
+      agents: ["岩甲"]
+      priority: 2
+    - pattern: "设计|UI|素材|图片"
+      category: design
+      agents: ["小绘"]
+      priority: 2
+    - pattern: "运营|推广|增长|营销"
+      category: ops
+      agents: ["布土拨"]
+      priority: 2
+    - pattern: "审批|总览|管理"
+      category: management
+      agents: ["鼠爪"]
+      priority: 1
+
+# Agent 定义
+agents:
+  lingke:
+    name: "凌刻"
+    role: "技术"
+    skills: ["nodejs", "python", "golang"]
+    status: "online"
+  yanjia:
+    name: "岩甲"
+    role: "安全"
+    skills: ["security", "audit"]
+    status: "online"
+  xiaohui:
+    name: "小绘"
+    role: "设计"
+    skills: ["ui", "design", "photoshop"]
+    status: "online"
+  bufu:
+    name: "布土拨"
+    role: "运营"
+    skills: ["marketing", "growth"]
+    status: "online"
+  shuzhua:
+    name: "鼠爪"
+    role: "总指挥"
+    skills: ["management"]
+    status: "online"
+
+# Sandbox 配置
+sandbox:
+  provider: docker  # subprocess / docker / remote
+  config:
+    image: "python:3.11-slim"
+    network: false
+    memory: "256m"
+    timeout: 60000
+
+# DMZ Agent 配置
+dmzAgent:
+  enabled: true
+  internet_access: true
+  can_write_db: false
+  require_approval: true
+  local_storage: "/data/dmz/downloads"
+  allow_networks:
+    - "0.0.0.0/0"
+  block_networks:
+    - "10.0.0.0/8"
+    - "172.16.0.0/12"
+    - "192.168.0.0/16"
+
+# 工作流配置
+workflow:
+  maxIterations: 10
+  coolingTime: 1000
+  maxDepth: 5
+
+# 消息总线
+messageBus:
+  type: memory  # memory / redis
+  maxHistory: 100
+
+# 监控
+monitor:
+  historyLimit: 1000
+  alertChannels:
+    - type: log
+      level: error

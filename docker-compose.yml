@@ -1,0 +1,30 @@
+# TeamHub - 一键启动
+# 用法: docker-compose up -d
+
+version: '3.8'
+
+services:
+  teamhub:
+    build: .
+    container_name: teamhub
+    ports:
+      - "3001:3001"
+    environment:
+      LLM_URL: "http://192.168.50.47:1234/v1/chat/completions"
+      LLM_MODEL: "qwen2.5-coder-7b-instruct"
+      MEMORY_TYPE: "memory"
+      STORAGE_TYPE: "memory"
+      SANDBOX_TYPE: "docker"
+      DMZ_INTERNET: "true"
+    volumes:
+      - teamhub-data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  teamhub-data:

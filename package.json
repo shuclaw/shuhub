@@ -1,0 +1,20 @@
+{
+  "name": "teamhub-modular",
+  "version": "1.0.0",
+  "description": "TeamHub 模块化 Agent 框架 - 可拼接的智能体系统",
+  "main": "hub.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "pg": "^8.11.0",
+    "redis": "^4.6.0",
+    "axios": "^1.6.0",
+    "ws": "^8.14.0",
+    "yaml": "^2.3.0",
+    "express": "^4.18.0",
+    "cors": "^2.8.5"
+  }
+}

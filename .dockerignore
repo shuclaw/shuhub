@@ -1,0 +1,9 @@
+# 不打包的文件
+node_modules/
+.git/
+*.log
+*.tmp
+test*.js
+debug*.js
+*.md
+.env
