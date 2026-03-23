@@ -305,6 +305,85 @@ class SandboxModule {
 
 ---
 
+### Connector 模块
+
+```javascript
+class ConnectorModule {
+  /**
+   * 设置Sandbox（用于错误回退）
+   * @param {SandboxModule} sandbox
+   */
+  setSandbox(sandbox) {}
+
+  /**
+   * 初始化
+   * @param {object} config - {connectors, fallbackToSandbox}
+   */
+  async init(config) {}
+
+  /**
+   * 注册外部Agent
+   * @param {object} config - {id, type, endpoint, apiKey, botToken}
+   */
+  async register(config) {}
+
+  /**
+   * 调用Agent（带重试和回退）
+   * @param {string} agentId
+   * @param {string} message
+   * @param {object} options
+   * @returns {Promise<{success, agent, result, duration, fallback}>}
+   */
+  async call(agentId, message, options) {}
+
+  /**
+   * 批量调用多个Agent
+   * @param {string} message
+   * @param {Array<string>} agentIds
+   */
+  async broadcast(message, agentIds) {}
+
+  /**
+   * 获取Agent状态
+   * @param {string} agentId
+   */
+  getStatus(agentId) {}
+
+  /**
+   * 断开连接
+   * @param {string} agentId
+   */
+  async disconnect(agentId) {}
+
+  /**
+   * 健康检查
+   */
+  async health() {}
+}
+```
+
+**支持类型：**
+| 类型 | 说明 |
+|------|------|
+| `openclaw` / `bot` | OpenClaw Bot API |
+| `rest` | REST API |
+| `telegram` | Telegram Bot |
+| `ws` / `websocket` | WebSocket |
+| `local` | 本地模式（直接回退到Sandbox）|
+
+**配置示例：**
+```javascript
+await connector.init({
+  connectors: [
+    { id: 'lingke', type: 'openclaw', endpoint: 'http://localhost:18789', apiKey: 'xxx' },
+    { id: 'telegram', type: 'telegram', botToken: 'xxx' }
+  ],
+  fallbackToSandbox: true  // Agent失败时回退到Sandbox
+});
+```
+
+---
+
 ### Hub 主调度器
 
 ```javascript
