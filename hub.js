@@ -679,6 +679,7 @@ class Hub extends BaseModule {
                 routing: getModuleStatus(this.routing),
                 workflow: getModuleStatus(this.workflow),
                 approval: getModuleStatus(this.approval),
+                safety: getModuleStatus(this.safety),
                 agent: getModuleStatus(this.agent),
                 connector: getModuleStatus(this.connector),
                 sandbox: getModuleStatus(this.sandbox),
